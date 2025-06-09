@@ -1,4 +1,4 @@
-# GPS Dual Mode Overlay
+# GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
 
 A lightweight, transparent HTML overlay that displays real-time location, time, and weather information. Perfect for streaming, screen recording, or any application where you need persistent location data on your screen.
 

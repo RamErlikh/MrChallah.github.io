@@ -41,16 +41,70 @@
   tick(); setInterval(tick, 1000);
   
   async function reverseGeocode(lat, lon){
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`);
-    const geo = await res.json();
-    const addr = geo.address;
-    const parts = [
-      addr.road || addr.suburb || "",
-      addr.city || addr.town || addr.village || "",
-      addr.state || "",
-      addr.country || ""
-    ].filter(Boolean);
-    return parts.join(", ");
+    try {
+      // Use Google's reverse geocoding API for better English translations
+      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=street_address|route|neighborhood|locality|administrative_area_level_1|country`);
+      const data = await res.json();
+      
+      if (data.status === 'OK' && data.results.length > 0) {
+        const result = data.results[0];
+        const components = result.address_components;
+        
+        // Extract components in preferred order
+        let road = '';
+        let area = '';
+        let city = '';
+        let state = '';
+        let country = '';
+        
+        components.forEach(component => {
+          const types = component.types;
+          if (types.includes('route') || types.includes('street_address')) {
+            road = component.long_name;
+          } else if (types.includes('neighborhood') || types.includes('sublocality')) {
+            area = component.long_name;
+          } else if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+            city = component.long_name;
+          } else if (types.includes('administrative_area_level_1')) {
+            state = component.long_name;
+          } else if (types.includes('country')) {
+            country = component.long_name;
+          }
+        });
+        
+        // Build address string, prioritizing the most specific location
+        const parts = [
+          road || area,
+          city,
+          state,
+          country
+        ].filter(Boolean);
+        
+        return parts.join(", ");
+      }
+      
+      // Fallback to formatted address if component parsing fails
+      if (data.results.length > 0) {
+        return data.results[0].formatted_address;
+      }
+      
+      throw new Error('No results from Google Geocoding');
+      
+    } catch (error) {
+      console.warn('Google geocoding failed, falling back to Nominatim:', error);
+      
+      // Fallback to Nominatim with additional language parameters
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en&addressdetails=1&extratags=1`);
+      const geo = await res.json();
+      const addr = geo.address;
+      const parts = [
+        addr.road || addr.suburb || "",
+        addr.city || addr.town || addr.village || "",
+        addr.state || "",
+        addr.country || ""
+      ].filter(Boolean);
+      return parts.join(", ");
+    }
   }
   
   async function fetchWeather(lat, lon){

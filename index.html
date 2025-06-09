@@ -1,0 +1,182 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+  html,body{margin:0;padding:0;background:transparent;color:#fff;font-family:sans-serif;}
+  #info{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;}
+  .row{display:flex;align-items:center;font-size:15px;font-weight:500;text-shadow:0 0 4px #000,0 0 8px #000;}
+  .row i{width:18px;margin-right:6px;text-align:center;}
+  </style></head><body>
+  
+  <div id="info">
+    <div class="row"><i class="fa-regular fa-clock"></i><span id="time">--:--:--</span></div>
+    <div class="row">
+      <i class="fa-solid fa-location-dot"></i>
+      <span id="place">Waiting…</span>
+    </div>
+    <div class="row"><i class="fa-solid fa-cloud"></i><span id="weather">--°C</span></div>
+  </div>
+  
+  <script>
+  const placeEl = document.getElementById('place');
+  const weatherEl = document.getElementById('weather');
+  const OWM_KEY = '618628ae452ff89f0e4477fba20b9d5c';
+  const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
+  
+  let lastKnownLocation = null;
+  let gpsSuccessful = false;
+  let gpsAttempted = false;
+  let consecutiveGPSFailures = 0;
+  
+  // Detect if we're on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  function tick(){
+    const now = new Date();
+    const offset = now.getTimezoneOffset() / -60;
+    const sign = offset > 0 ? '-' : '+';
+    document.getElementById('time').textContent =
+      `${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})} GMT${sign}${Math.abs(offset)}`;
+  }
+  tick(); setInterval(tick, 1000);
+  
+  async function reverseGeocode(lat, lon){
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`);
+    const geo = await res.json();
+    const addr = geo.address;
+    const parts = [
+      addr.road || addr.suburb || "",
+      addr.city || addr.town || addr.village || "",
+      addr.state || "",
+      addr.country || ""
+    ].filter(Boolean);
+    return parts.join(", ");
+  }
+  
+  async function fetchWeather(lat, lon){
+    const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=en&appid=${OWM_KEY}`);
+    const j = await r.json();
+    const c = j.main.temp.toFixed(0);
+    const f = (c * 9 / 5 + 32).toFixed(0);
+    const desc = j.weather[0].description.replace(/\b\w/g, s => s.toUpperCase());
+    weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+  }
+  
+  // Method 1: Try IRL Pro location data
+  function getIRLProLocation() {
+    if (window.locationData && window.locationData.latitude && window.locationData.longitude) {
+      return {
+        lat: window.locationData.latitude,
+        lon: window.locationData.longitude,
+        source: "IRL Pro GPS"
+      };
+    }
+    return null;
+  }
+  
+  // Method 2: Try browser GPS
+  function getBrowserGPS() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+  
+      placeEl.textContent = "Grabbing GPS Location...";
+      
+      const options = {
+        enableHighAccuracy: true,
+        timeout: isIOS ? 60000 : (isMobile ? 45000 : 15000),
+        maximumAge: gpsSuccessful ? 30000 : 0
+      };
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          gpsSuccessful = true;
+          consecutiveGPSFailures = 0;
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracy: Math.round(position.coords.accuracy),
+            source: `GPS (±${Math.round(position.coords.accuracy)}m)`
+          });
+        },
+        (error) => {
+          consecutiveGPSFailures++;
+          reject(error);
+        },
+        options
+      );
+    });
+  }
+  
+  // Method 3: Fallback to IP location
+  async function getLocationFromGoogle(){
+    const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ considerIp: true })
+    });
+    const data = await res.json();
+    return {
+      lat: data.location.lat,
+      lon: data.location.lng,
+      source: "IP Location"
+    };
+  }
+  
+  async function updateLocationAndWeather(){
+    try {
+      let locationData = null;
+      
+      // Try Method 1: IRL Pro location data
+      locationData = getIRLProLocation();
+      
+      // Try Method 2: Browser GPS
+      if (!locationData && (!gpsAttempted || gpsSuccessful)) {
+        try {
+          locationData = await getBrowserGPS();
+          gpsAttempted = true;
+        } catch (gpsError) {
+          gpsAttempted = true;
+        }
+      }
+      
+      // Try Method 3: IP location fallback
+      if (!locationData) {
+        placeEl.textContent = "Using IP location...";
+        locationData = await getLocationFromGoogle();
+      }
+      
+      // Use last known GPS location only if it's very recent (within 5 minutes) and GPS just failed
+      if (!locationData && gpsSuccessful && lastKnownLocation && lastKnownLocation.source.includes('GPS') && consecutiveGPSFailures === 1) {
+        const now = Date.now();
+        const locationAge = now - (lastKnownLocation.timestamp || 0);
+        if (locationAge < 300000) { // 5 minutes
+          locationData = lastKnownLocation;
+        }
+      }
+      
+      // Update the display
+      if (locationData) {
+        lastKnownLocation = locationData;
+        lastKnownLocation.timestamp = Date.now();
+        placeEl.textContent = "Loading location...";
+        const label = await reverseGeocode(locationData.lat, locationData.lon);
+        placeEl.textContent = label;
+        fetchWeather(locationData.lat, locationData.lon);
+      }
+      
+    } catch (e) {
+      placeEl.textContent = "Location N/A";
+      weatherEl.textContent = "Weather N/A";
+    }
+  }
+  
+  // Auto-refresh every 90 seconds
+  setInterval(() => updateLocationAndWeather(), 90000);
+  
+  // Start immediately
+  updateLocationAndWeather();
+  </script>
+  </body></html>

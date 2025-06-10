@@ -164,19 +164,114 @@
     });
   }
   
-  // Method 3: Fallback to IP location
+  // Method 3: Fallback to IP location with multiple services
   async function getLocationFromGoogle(){
-    const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ considerIp: true })
-    });
-    const data = await res.json();
-    return {
-      lat: data.location.lat,
-      lon: data.location.lng,
-      source: "IP Location"
-    };
+    try {
+      const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ considerIp: true })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`Google Geolocation API error: ${data.error.message}`);
+      }
+      
+      return {
+        lat: data.location.lat,
+        lon: data.location.lng,
+        source: "IP Location (Google)"
+      };
+    } catch (error) {
+      console.warn('Google IP location failed:', error);
+      throw error;
+    }
+  }
+
+  // Alternative IP location services
+  async function getIPLocationFromIpApi() {
+    try {
+      const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon');
+      const data = await res.json();
+      
+      if (data.status !== 'success') {
+        throw new Error('IP-API request failed');
+      }
+      
+      return {
+        lat: data.lat,
+        lon: data.lon,
+        source: "IP Location (IP-API)"
+      };
+    } catch (error) {
+      console.warn('IP-API location failed:', error);
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpInfo() {
+    try {
+      const res = await fetch('https://ipinfo.io/json');
+      const data = await res.json();
+      
+      if (!data.loc) {
+        throw new Error('IPInfo request failed - no location data');
+      }
+      
+      const [lat, lon] = data.loc.split(',').map(Number);
+      return {
+        lat: lat,
+        lon: lon,
+        source: "IP Location (IPInfo)"
+      };
+    } catch (error) {
+      console.warn('IPInfo location failed:', error);
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpApi2() {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`IPAPI.co error: ${data.reason}`);
+      }
+      
+      return {
+        lat: data.latitude,
+        lon: data.longitude,
+        source: "IP Location (IPAPI.co)"
+      };
+    } catch (error) {
+      console.warn('IPAPI.co location failed:', error);
+      throw error;
+    }
+  }
+
+  // Try multiple IP location services in order
+  async function getIPLocation() {
+    const services = [
+      getLocationFromGoogle,
+      getIPLocationFromIpApi,
+      getIPLocationFromIpInfo,
+      getIPLocationFromIpApi2
+    ];
+
+    for (const service of services) {
+      try {
+        const result = await service();
+        console.log('IP location success:', result.source);
+        return result;
+      } catch (error) {
+        console.warn('IP location service failed, trying next...', error);
+        continue;
+      }
+    }
+    
+    throw new Error('All IP location services failed');
   }
   
   async function updateLocationAndWeather(){
@@ -192,6 +287,7 @@
           locationData = await getBrowserGPS();
           gpsAttempted = true;
         } catch (gpsError) {
+          console.warn('GPS failed:', gpsError);
           gpsAttempted = true;
         }
       }
@@ -199,7 +295,11 @@
       // Try Method 3: IP location fallback
       if (!locationData) {
         placeEl.textContent = "Using IP location...";
-        locationData = await getLocationFromGoogle();
+        try {
+          locationData = await getIPLocation();
+        } catch (ipError) {
+          console.error('All IP location services failed:', ipError);
+        }
       }
       
       // Use last known GPS location only if it's very recent (within 5 minutes) and GPS just failed
@@ -208,6 +308,7 @@
         const locationAge = now - (lastKnownLocation.timestamp || 0);
         if (locationAge < 300000) { // 5 minutes
           locationData = lastKnownLocation;
+          console.log('Using cached GPS location');
         }
       }
       
@@ -219,9 +320,13 @@
         const label = await reverseGeocode(locationData.lat, locationData.lon);
         placeEl.textContent = label;
         fetchWeather(locationData.lat, locationData.lon);
+        console.log('Location updated:', locationData.source, label);
+      } else {
+        throw new Error('No location data available from any source');
       }
       
     } catch (e) {
+      console.error('Location update failed:', e);
       placeEl.textContent = "Location N/A";
       weatherEl.textContent = "Weather N/A";
     }

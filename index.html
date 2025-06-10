@@ -8,6 +8,7 @@
   </style></head><body>
   
   <div id="info">
+    <div class="row"><i class="fa-regular fa-calendar"></i><span id="date">----/--/--</span></div>
     <div class="row"><i class="fa-regular fa-clock"></i><span id="time">--:--:--</span></div>
     <div class="row">
       <i class="fa-solid fa-location-dot"></i>
@@ -37,6 +38,8 @@
     const sign = offset > 0 ? '-' : '+';
     document.getElementById('time').textContent =
       `${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})} GMT${sign}${Math.abs(offset)}`;
+    document.getElementById('date').textContent = 
+      now.toLocaleDateString('en-US', {year: 'numeric', month: '2-digit', day: '2-digit'});
   }
   tick(); setInterval(tick, 1000);
   

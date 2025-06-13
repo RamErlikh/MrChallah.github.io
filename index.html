@@ -2,7 +2,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
   html,body{margin:0;padding:0;background:transparent;color:#fff;font-family:sans-serif;}
-  #info{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;}
+  #info{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,0.06);padding:12px;border-radius:8px;}
   .row{display:flex;align-items:center;font-size:15px;font-weight:500;text-shadow:0 0 4px #000,0 0 8px #000;}
   .row i{width:18px;margin-right:6px;text-align:center;}
   </style></head><body>
@@ -130,14 +130,16 @@
   }
   
   // Method 2: Try browser GPS
-  function getBrowserGPS() {
+  function getBrowserGPS(showLoadingMessages = true) {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported'));
         return;
       }
   
-      placeEl.textContent = "Grabbing GPS Location...";
+      if (showLoadingMessages) {
+        placeEl.textContent = "Grabbing GPS Location...";
+      }
       
       const options = {
         enableHighAccuracy: true,
@@ -275,7 +277,7 @@
     throw new Error('All IP location services failed');
   }
   
-  async function updateLocationAndWeather(){
+  async function updateLocationAndWeather(showLoadingMessages = true){
     try {
       let locationData = null;
       
@@ -285,7 +287,7 @@
       // Try Method 2: Browser GPS
       if (!locationData && (!gpsAttempted || gpsSuccessful)) {
         try {
-          locationData = await getBrowserGPS();
+          locationData = await getBrowserGPS(showLoadingMessages);
           gpsAttempted = true;
         } catch (gpsError) {
           console.warn('GPS failed:', gpsError);
@@ -295,7 +297,9 @@
       
       // Try Method 3: IP location fallback
       if (!locationData) {
-        placeEl.textContent = "Using IP location...";
+        if (showLoadingMessages) {
+          placeEl.textContent = "Using IP location...";
+        }
         try {
           locationData = await getIPLocation();
         } catch (ipError) {
@@ -317,7 +321,9 @@
       if (locationData) {
         lastKnownLocation = locationData;
         lastKnownLocation.timestamp = Date.now();
-        placeEl.textContent = "Loading location...";
+        if (showLoadingMessages) {
+          placeEl.textContent = "Loading location...";
+        }
         const label = await reverseGeocode(locationData.lat, locationData.lon);
         placeEl.textContent = label;
         fetchWeather(locationData.lat, locationData.lon);
@@ -333,10 +339,10 @@
     }
   }
   
-  // Auto-refresh every 90 seconds
-  setInterval(() => updateLocationAndWeather(), 90000);
+  // Auto-refresh every 90 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 90000);
   
-  // Start immediately
-  updateLocationAndWeather();
+  // Start immediately (with loading messages)
+  updateLocationAndWeather(true);
   </script>
   </body></html>

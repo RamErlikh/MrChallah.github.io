@@ -19,7 +19,6 @@
   <script>
   const placeEl = document.getElementById('place');
   const weatherEl = document.getElementById('weather');
-  const OWM_KEY = '618628ae452ff89f0e4477fba20b9d5c';
   const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
   
   let lastKnownLocation = null;
@@ -109,12 +108,30 @@
   }
   
   async function fetchWeather(lat, lon){
-    const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=en&appid=${OWM_KEY}`);
-    const j = await r.json();
-    const c = j.main.temp.toFixed(0);
-    const f = (c * 9 / 5 + 32).toFixed(0);
-    const desc = j.weather[0].description.replace(/\b\w/g, s => s.toUpperCase());
-    weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+      const j = await r.json();
+      const c = Math.round(j.current.temperature_2m);
+      const f = Math.round(c * 9 / 5 + 32);
+      
+      // Weather condition mapping for Open-Meteo weather codes
+      const weatherCodes = {
+        0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
+        45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
+        55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
+        61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
+        67: 'Heavy Freezing Rain', 71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
+        77: 'Snow Grains', 80: 'Slight Rain Showers', 81: 'Moderate Rain Showers', 
+        82: 'Violent Rain Showers', 85: 'Slight Snow Showers', 86: 'Heavy Snow Showers',
+        95: 'Thunderstorm', 96: 'Thunderstorm with Slight Hail', 99: 'Thunderstorm with Heavy Hail'
+      };
+      
+      const desc = weatherCodes[j.current.weather_code] || 'Unknown';
+      weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+    } catch (error) {
+      console.error('Weather fetch failed:', error);
+      weatherEl.textContent = "Weather N/A";
+    }
   }
   
   // Method 1: Try IRL Pro location data

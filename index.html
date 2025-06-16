@@ -146,6 +146,168 @@
     return null;
   }
   
+  // Method 1.5: Try PRISM Live location data
+  function getPRISMLocation() {
+    // Check for various possible PRISM Live location interfaces
+    if (window.prismLocationData && window.prismLocationData.latitude && window.prismLocationData.longitude) {
+      return {
+        lat: window.prismLocationData.latitude,
+        lon: window.prismLocationData.longitude,
+        source: "PRISM Live GPS"
+      };
+    }
+    
+    // Alternative PRISM Live interfaces
+    if (window.prism && window.prism.location && window.prism.location.latitude && window.prism.location.longitude) {
+      return {
+        lat: window.prism.location.latitude,
+        lon: window.prism.location.longitude,
+        source: "PRISM Live GPS"
+      };
+    }
+    
+    // Check for PRISM Live GPS data in different format
+    if (window.PRISM_GPS && window.PRISM_GPS.lat && window.PRISM_GPS.lon) {
+      return {
+        lat: window.PRISM_GPS.lat,
+        lon: window.PRISM_GPS.lon,
+        source: "PRISM Live GPS"
+      };
+    }
+    
+    // Check webkit message handlers (common in mobile apps)
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.locationHandler) {
+      // This would require a callback mechanism, but we can try to access cached data
+      if (window.webkit.lastKnownLocation && window.webkit.lastKnownLocation.latitude && window.webkit.lastKnownLocation.longitude) {
+        return {
+          lat: window.webkit.lastKnownLocation.latitude,
+          lon: window.webkit.lastKnownLocation.longitude,
+          source: "PRISM Live GPS (WebKit)"
+        };
+      }
+    }
+    
+    // Check for Android interface
+    if (window.Android && window.Android.getLatitude && window.Android.getLongitude) {
+      try {
+        const lat = parseFloat(window.Android.getLatitude());
+        const lon = parseFloat(window.Android.getLongitude());
+        if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+          return {
+            lat: lat,
+            lon: lon,
+            source: "PRISM Live GPS (Android)"
+          };
+        }
+      } catch (e) {
+        console.warn('Android location interface failed:', e);
+      }
+    }
+    
+    return null;
+  }
+  
+  // Method 1.6: Actively request location from PRISM Live
+  function requestPRISMLocation() {
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+      
+      // Set timeout to avoid hanging
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error('PRISM Live location request timeout'));
+        }
+      }, 5000);
+      
+      // Try WebKit message handler
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.locationHandler) {
+        try {
+          window.webkit.messageHandlers.locationHandler.postMessage({action: 'getCurrentLocation'});
+          
+          // Set up listener for response
+          window.prismLocationCallback = function(locationData) {
+            if (!resolved && locationData && locationData.latitude && locationData.longitude) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve({
+                lat: locationData.latitude,
+                lon: locationData.longitude,
+                source: "PRISM Live GPS (Requested)"
+              });
+            }
+          };
+          
+          // Also check if location is immediately available
+          setTimeout(() => {
+            const location = getPRISMLocation();
+            if (!resolved && location) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve(location);
+            }
+          }, 100);
+          
+        } catch (e) {
+          console.warn('WebKit location request failed:', e);
+        }
+      }
+      
+      // Try Android interface
+      if (window.Android && window.Android.requestLocation) {
+        try {
+          window.Android.requestLocation();
+          
+          // Check for location after a brief delay
+          setTimeout(() => {
+            const location = getPRISMLocation();
+            if (!resolved && location) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve(location);
+            }
+          }, 1000);
+          
+        } catch (e) {
+          console.warn('Android location request failed:', e);
+        }
+      }
+      
+      // Try posting messages to parent frame (if in iframe)
+      try {
+        window.parent.postMessage({type: 'requestLocation'}, '*');
+        window.postMessage({type: 'requestLocation'}, '*');
+        
+        // Listen for response
+        const messageListener = function(event) {
+          if (!resolved && event.data && event.data.type === 'locationResponse' && event.data.latitude && event.data.longitude) {
+            resolved = true;
+            clearTimeout(timeout);
+            window.removeEventListener('message', messageListener);
+            resolve({
+              lat: event.data.latitude,
+              lon: event.data.longitude,
+              source: "PRISM Live GPS (Message)"
+            });
+          }
+        };
+        window.addEventListener('message', messageListener);
+        
+      } catch (e) {
+        console.warn('Message-based location request failed:', e);
+      }
+      
+      // If no specific interface worked, reject after timeout
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          reject(new Error('No PRISM Live location interface found'));
+        }
+      }, 2000);
+    });
+  }
+  
   // Method 2: Try browser GPS
   function getBrowserGPS(showLoadingMessages = true) {
     return new Promise((resolve, reject) => {
@@ -301,6 +463,20 @@
       // Try Method 1: IRL Pro location data
       locationData = getIRLProLocation();
       
+      // Try Method 1.5: Try PRISM Live location data
+      if (!locationData) {
+        locationData = getPRISMLocation();
+      }
+      
+      // Try Method 1.6: Actively request location from PRISM Live
+      if (!locationData) {
+        try {
+          locationData = await requestPRISMLocation();
+        } catch (prismError) {
+          console.warn('PRISM Live location request failed:', prismError);
+        }
+      }
+      
       // Try Method 2: Browser GPS
       if (!locationData && (!gpsAttempted || gpsSuccessful)) {
         try {
@@ -358,6 +534,38 @@
   
   // Auto-refresh every 90 seconds (without loading messages)
   setInterval(() => updateLocationAndWeather(false), 90000);
+  
+  // Debug function to detect available location interfaces
+  function debugLocationInterfaces() {
+    console.log('=== LOCATION INTERFACE DEBUG ===');
+    console.log('User Agent:', navigator.userAgent);
+    console.log('IRL Pro locationData:', !!window.locationData);
+    console.log('PRISM prismLocationData:', !!window.prismLocationData);
+    console.log('PRISM window.prism:', !!window.prism);
+    console.log('PRISM window.PRISM_GPS:', !!window.PRISM_GPS);
+    console.log('WebKit messageHandlers:', !!(window.webkit && window.webkit.messageHandlers));
+    console.log('Android interface:', !!window.Android);
+    console.log('Navigator geolocation:', !!navigator.geolocation);
+    
+    // Log all window properties that might be related to location
+    const locationRelatedProps = [];
+    for (let prop in window) {
+      if (prop.toLowerCase().includes('location') || 
+          prop.toLowerCase().includes('gps') || 
+          prop.toLowerCase().includes('geo') ||
+          prop.toLowerCase().includes('prism') ||
+          prop.toLowerCase().includes('position')) {
+        locationRelatedProps.push(prop + ': ' + typeof window[prop]);
+      }
+    }
+    if (locationRelatedProps.length > 0) {
+      console.log('Location-related window properties:', locationRelatedProps);
+    }
+    console.log('=== END DEBUG ===');
+  }
+  
+  // Run debug on load
+  setTimeout(debugLocationInterfaces, 1000);
   
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);

@@ -1,6 +1,6 @@
 # GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
 
-# TLDR - Paste https://mrchallah.github.io as a Web Overlay in your streaming app, works great on IRL Pro.
+# TLDR - Paste https://ramerlikh.github.io/locationoverlay as a Web Overlay in your streaming app, works great on IRL Pro.
 
 A lightweight, transparent HTML overlay that displays real-time location, time, and weather information. Perfect for streaming, screen recording, or any application where you need persistent location data on your screen.
 

@@ -18,6 +18,11 @@
     display: inline-block;
   }
   
+  .weather-icon-main {
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  
   .heat-waves {
     position: absolute;
     top: 25px;
@@ -39,15 +44,19 @@
     font-size: 1.3em;
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
   }
+  
+  .weather-row {
+    margin-top: -4.25px;
+  }
   </style></head><body class="text-white">
   
   <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
       <span id="place">Waiting…</span>
     </div>
-    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
         <span id="weather-icon" class="weather-icon">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
@@ -74,11 +83,10 @@
   
   function tick(){
     const now = new Date();
-    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
     const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     
-    document.getElementById('time').textContent = `${dayName}, ${dateString}, ${timeString}`;
+    document.getElementById('time').textContent = `${dateString}, ${timeString}`;
   }
   tick(); setInterval(tick, 1000);
   

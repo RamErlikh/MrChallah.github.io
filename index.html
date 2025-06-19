@@ -6,10 +6,7 @@
     background: transparent !important;
   }
   .text-shadow {
-    color: white;
-    font-size: 1.3em;
-    -webkit-text-stroke: 0.7px #000;
-    text-shadow: 0 0 1px #000, 0 0 8px #000;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
   }
   .info-icon {
     width: 30px;
@@ -19,12 +16,6 @@
   .weather-icon {
     position: relative;
     display: inline-block;
-  }
-  
-  .weather-icon-main {
-    color: white;
-    -webkit-text-stroke: 1px #000;
-    text-shadow: 0 0 4px #000, 0 0 8px #000;
   }
   
   .heat-waves {
@@ -41,25 +32,22 @@
     50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
   }
   
+  
+  
   .icon-text-shadow {
     color: white;
     font-size: 1.3em;
-    -webkit-text-stroke: 1px #000;
-    text-shadow: 0 0 4px #000, 0 0 8px #000;
-  }
-  
-  .weather-row {
-    margin-top: -4px;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
   }
   </style></head><body class="text-white">
   
   <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
       <span id="place">Waiting…</span>
     </div>
-    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
+    <div class="d-flex align-items-center fs-5 fw-normal text-shadow text-nowrap">
       <span class="info-icon me-2">
         <span id="weather-icon" class="weather-icon">
           <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>

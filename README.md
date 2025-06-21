@@ -10,7 +10,7 @@
 - **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
 
 ### 📍 GPS + IP Version (Most Accurate)  
-**URL:** `https://mrchallah.github.io`
+**URL:** `https://ramerlikh.github.io/locationoverlay` or `https://mrchallah.github.io`
 - **Best for:** IRL Pro and GPS-capable environments
 - **Accuracy:** High (GPS + IP fallback)
 - **Compatibility:** Limited to GPS-friendly environments

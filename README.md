@@ -2,7 +2,7 @@
 
 ## Two Versions Available
 
-### 🌐 IP-Only Version (Most Compatible) Best for OBS/Prism Live
+### 🌐 IP-Only Version (Most Compatible) - Best for OBS/Prism Live
 **URL:** `https://mrchallah.github.io/iploc`
 - **Best for:** PRISM Live, OBS, XSplit, and most streaming apps
 - **Accuracy:** Lower (IP-based location)

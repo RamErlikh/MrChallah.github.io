@@ -229,7 +229,7 @@
     const finalCondition = condition || googleWeatherCodes[weatherCode]?.condition || 'CLOUDY';
     
     // Repository base URL for v4 icons (now primary for everyone)
-    const repoBaseUrl = 'https://raw.githubusercontent.com/RamErlikh/locationoverlay/main/v4/';
+    const repoBaseUrl = 'https://raw.githubusercontent.com/MrChallah/MrChallah.github.io/main/v4/';
     const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
     
     // Standard Google Maps weather icon mapping for fallback
@@ -340,8 +340,8 @@
       const precipitation = j.current.precipitation || 0;
       const visibility = j.current.visibility || 10000;
       
-      // Wind conditions (if wind speed > 25 km/h)
-      if (windSpeed > 25) {
+      // Wind conditions (if wind speed > 20 km/h)
+      if (windSpeed > 20) {
         if (precipitation > 0) {
           condition = 'WIND_AND_RAIN';
           desc = 'Windy with Rain';

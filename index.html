@@ -93,7 +93,7 @@
   async function reverseGeocode(lat, lon){
     try {
       // Use Google's reverse geocoding API for better English translations
-      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=street_address|route|neighborhood|locality|administrative_area_level_1|country`);
+      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_1|country`);
       const data = await res.json();
       
       if (data.status === 'OK' && data.results.length > 0) {
@@ -110,6 +110,9 @@
           const types = component.types;
           const name = component.long_name;
           
+          // Debug logging
+          console.log('Component:', name, 'Types:', types);
+          
           // Check if location is in Japan
           if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
             isJapan = true;
@@ -118,11 +121,14 @@
           // Filter out specific district/dong names that are too detailed
           const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || name.includes('(') || name.includes(')');
           
-          if ((types.includes('locality') || types.includes('administrative_area_level_2')) && !isDetailedDistrict) {
+          if (types.includes('locality') && !isDetailedDistrict) {
+            console.log('Setting city to:', name);
             city = name;
           } else if (types.includes('administrative_area_level_1') && !isDetailedDistrict) {
+            console.log('Setting state to:', name);
             state = name;
           } else if (types.includes('country')) {
+            console.log('Setting country to:', name);
             country = name;
           }
         });
@@ -152,12 +158,27 @@
           country
         ].filter(Boolean);
         
+        console.log('Final location parts:', parts);
         return parts.join(", ");
       }
       
-      // Fallback to formatted address if component parsing fails
+      // Safer fallback - extract only city, state, country from formatted address
       if (data.results.length > 0) {
-        return data.results[0].formatted_address;
+        const formattedAddr = data.results[0].formatted_address;
+        const addressParts = formattedAddr.split(', ');
+        
+        // Try to extract only the broader location components (last 2-3 parts typically)
+        // Skip detailed addresses like street numbers, building names, etc.
+        const broadParts = addressParts.slice(-3).filter(part => {
+          // Filter out postal codes, detailed street addresses
+          return !part.match(/^\d+/) && // No leading numbers
+                 !part.includes('#') && // No building numbers
+                 !part.includes('Suite') && // No suite numbers
+                 !part.includes('Floor') && // No floor numbers
+                 part.length > 2; // Reasonable length
+        });
+        
+        return broadParts.join(", ");
       }
       
       throw new Error('No results from Google Geocoding');
@@ -170,20 +191,39 @@
       const geo = await res.json();
       const addr = geo.address;
       
+      console.log('Nominatim address components:', addr);
+      
       // Check if Japan in Nominatim response
       window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
       
-      // Filter out detailed districts from Nominatim as well
-      let suburb = addr.suburb || "";
-      if (suburb.includes('-dong') || suburb.includes('(') || suburb.includes(')')) {
-        suburb = "";
+      // Smart city name selection - avoid administrative names
+      let city = '';
+      let state = '';
+      let country = addr.country || '';
+      
+      // Prefer village/town over city if city contains administrative terms
+      if (addr.village && !addr.village.includes('Capital') && !addr.village.includes('City of')) {
+        city = addr.village;
+      } else if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
+        city = addr.town;
+      } else if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
+        city = addr.city;
+      } else if (addr.state && addr.state !== addr.city) {
+        // If city has administrative terms, use state as city if they're different
+        city = addr.state;
+        state = ''; // Don't duplicate
+      } else {
+        // Last resort - clean up the city name
+        city = (addr.city || addr.town || addr.village || '').replace(/^Capital City of /, '');
       }
       
-      const parts = [
-        addr.city || addr.town || addr.village || "",
-        addr.state || "",
-        addr.country || ""
-      ].filter(Boolean);
+      // Only set state if it's different from city and doesn't contain administrative terms
+      if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
+        state = addr.state;
+      }
+      
+      const parts = [city, state, country].filter(Boolean);
+      console.log('Nominatim final parts:', parts);
       return parts.join(", ");
     }
   }
@@ -434,20 +474,25 @@
       const weatherIcon = document.getElementById('weather-icon');
       const iconUrls = getGoogleWeatherIcon(j.current.weather_code, isDay, condition);
       
-      // Replace Font Awesome icon with Google weather icon
+      // Create new image element and preload it
       const imgElement = document.createElement('img');
-      imgElement.src = iconUrls.primary;
       imgElement.alt = desc;
       imgElement.style.cssText = 'width: 24px; height: 24px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);';
       
       // Add error handler for fallback to standard Google icons
       imgElement.onerror = function() {
-        console.log('Japanese regional icon failed, using fallback:', iconUrls.fallback);
+        console.log('Primary weather icon failed, using fallback:', iconUrls.fallback);
         this.src = iconUrls.fallback;
       };
       
-      weatherIcon.innerHTML = '';
-      weatherIcon.appendChild(imgElement);
+      // Only replace the icon after the new one has loaded to prevent blinking
+      imgElement.onload = function() {
+        weatherIcon.innerHTML = '';
+        weatherIcon.appendChild(imgElement);
+      };
+      
+      // Start loading the image (this triggers the onload event when ready)
+      imgElement.src = iconUrls.primary;
       
       // Show heat waves if temperature is above 28°C (keeping this feature)
       const heatWaves = document.getElementById('heat-waves');

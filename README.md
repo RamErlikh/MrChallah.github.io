@@ -11,7 +11,7 @@
 - **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
 
 ### 📍 GPS + IP Version (Most Accurate) - Best for IRL Pro
-**URL:** `https://mrchallah.github.io/`
+**URL:** `https://ramerlikh.github.io/locationoverlay/` or `https://mrchallah.github.io/`
 - **Best for:** IRL Pro and GPS-capable environments
 - **Accuracy:** High (GPS + IP fallback)
 - **Compatibility:** Limited to GPS-friendly environments
@@ -345,7 +345,7 @@ Feel free to submit issues, feature requests, or pull requests to improve the ov
 **Quick Reference:**
 - **Maximum Compatibility (Japanese)**: `https://mrchallah.github.io/iploc`
 - **Maximum Compatibility (Font Awesome)**: `https://mrchallah.github.io/classiciploc`
-- **Maximum Accuracy (Japanese)**: `https://mrchallah.github.io/`
+- **Maximum Accuracy (Japanese)**: `https://ramerlikh.github.io/locationoverlay/` or `https://mrchallah.github.io/`
 - **Maximum Accuracy (Font Awesome)**: `https://mrchallah.github.io/classic`
 - **PRISM Live**: Use IP versions
 - **IRL Pro**: Use GPS versions

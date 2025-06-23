@@ -346,7 +346,7 @@ Feel free to submit issues, feature requests, or pull requests to improve the ov
 - **Maximum Compatibility (Japanese)**: `https://mrchallah.github.io/iploc`
 - **Maximum Compatibility (Font Awesome)**: `https://mrchallah.github.io/classiciploc`
 - **Maximum Accuracy (Japanese)**: `https://ramerlikh.github.io/locationoverlay/` or `https://mrchallah.github.io/`
-- **Maximum Accuracy (Font Awesome)**: `https://mrchallah.github.io/classic`
+- **Maximum Accuracy (Font Awesome)**: `https://ramerlikh.github.io/locationoverlayclassic/` or `https://mrchallah.github.io/classic`
 - **PRISM Live**: Use IP versions
 - **IRL Pro**: Use GPS versions
 - **OBS/XSplit**: Use IP versions

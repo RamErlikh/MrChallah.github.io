@@ -503,7 +503,7 @@
     const finalCondition = condition || googleWeatherCodes[weatherCode]?.condition || 'CLOUDY';
     
     // Repository base URL for v4 icons (now primary for everyone)
-    const repoBaseUrl = 'https://raw.githubusercontent.com/RamErlikh/locationoverlay/main/v4/';
+    const repoBaseUrl = 'https://raw.githubusercontent.com/MrChallah/MrChallah.github.io/main/v4/';
     const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
     
     // Standard Google Maps weather icon mapping for fallback
@@ -904,8 +904,8 @@
     } catch (error) {
       console.error('Weather fetch failed:', error);
       
-      // Use cached weather data if it's recent (within 10 minutes) instead of showing "Weather N/A"
-      if (lastWeatherData && (Date.now() - lastWeatherTimestamp) < 600000) {
+      // Use cached weather data instead of showing "Weather N/A" (persistent like location caching)
+      if (lastWeatherData) {
         console.log('Using cached weather data due to fetch failure');
         const cached = lastWeatherData;
         weatherEl.textContent = `${cached.temperature}°C | ${cached.fahrenheit}°F, ${cached.description}`;
@@ -955,8 +955,8 @@
         if (heatWaves) weatherIcon.appendChild(heatWaves);
         if (windWaves) weatherIcon.appendChild(windWaves);
       } else {
-        // Only show "Weather N/A" if no recent cached data is available
-      weatherEl.textContent = "Weather N/A";
+        // Only show "Weather N/A" if no cached data is available at all
+        weatherEl.textContent = "Weather N/A";
       }
     }
   }
@@ -1214,9 +1214,9 @@
           placeEl.textContent = "Location N/A";
           
           // Don't immediately clear weather - let the weather fetch handle caching
-          if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
-          weatherEl.textContent = "Weather N/A";
-        }
+          if (!lastWeatherData) {
+            weatherEl.textContent = "Weather N/A";
+          }
         } else {
           // During silent refresh failures, just log the issue but keep existing display
           console.log('Silent location refresh failed, keeping existing display');
@@ -1227,10 +1227,10 @@
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
       if (showLoadingMessages) {
-      placeEl.textContent = "Location N/A";
+        placeEl.textContent = "Location N/A";
         // Don't immediately clear weather - let cached data persist
-        if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
-      weatherEl.textContent = "Weather N/A";
+        if (!lastWeatherData) {
+          weatherEl.textContent = "Weather N/A";
         }
       }
     }

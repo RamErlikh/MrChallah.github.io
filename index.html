@@ -74,7 +74,7 @@
   }
   </style></head><body class="text-white">
   
-  <div id="info" class="position-absolute top-0 start-0 d-flex flex-column gap-1 rounded" style="padding:4px;">
+  <div id="info" class="position-absolute top-0 start-0 d-flex flex-column gap-1 rounded" style="padding:8px;">
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap location-row">
       <span class="info-icon me-2">
@@ -1811,45 +1811,5 @@
   
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);
-  
-  // Test function to verify word count filtering logic
-  function testWordCountFiltering() {
-    console.log('=== TESTING WORD COUNT FILTERING ===');
-    
-    // Test case 1: Santo Domingo example (should hide state)
-    const test1 = filterLocationByWordCount('Santo Domingo', 'Distrito Nacional', 'Dominican Republic');
-    console.log('Test 1 - Santo Domingo:', test1);
-    console.log('Expected: "Santo Domingo, Dominican Republic"');
-    console.log('Match:', test1 === 'Santo Domingo, Dominican Republic');
-    
-    // Test case 2: Bamburi ward example (should keep state - only 1 word in country)
-    const test2 = filterLocationByWordCount('Bamburi ward', 'Mombasa County', 'Kenya');
-    console.log('Test 2 - Bamburi ward:', test2);
-    console.log('Expected: "Bamburi ward, Mombasa County, Kenya"');
-    console.log('Match:', test2 === 'Bamburi ward, Mombasa County, Kenya');
-    
-    // Test case 3: 3+ words in city (should hide state)
-    const test3 = filterLocationByWordCount('New York City', 'New York State', 'United States');
-    console.log('Test 3 - New York City:', test3);
-    console.log('Expected: "New York City, United States"');
-    console.log('Match:', test3 === 'New York City, United States');
-    
-    // Test case 4: Single words (should keep state)
-    const test4 = filterLocationByWordCount('London', 'England', 'UK');
-    console.log('Test 4 - London:', test4);
-    console.log('Expected: "London, England, UK"');
-    console.log('Match:', test4 === 'London, England, UK');
-    
-    // Test case 5: Only city and country (no state)
-    const test5 = filterLocationByWordCount('Singapore', '', 'Singapore');
-    console.log('Test 5 - Singapore:', test5);
-    console.log('Expected: "Singapore"');
-    console.log('Match:', test5 === 'Singapore');
-    
-    console.log('=== END WORD COUNT FILTERING TESTS ===');
-  }
-  
-  // Make test function available globally
-  window.testWordCountFiltering = testWordCountFiltering;
   </script>
   </body></html>
